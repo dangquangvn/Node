@@ -19,3 +19,5 @@ userUserRouter.get(
   authMiddleware.verifyAccessToken,
   wrapAsync(userController.getDetailMySelf)
 )
+
+userUserRouter.post('/upload-image', authMiddleware.verifyAccessToken, userController.uploadUserAvatarImage)

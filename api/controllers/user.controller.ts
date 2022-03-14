@@ -3,6 +3,8 @@ import { Request, Response } from 'express'
 import { responseSuccess, ErrorHandler } from '../utils/response'
 import { UserModel } from '../database/models/user.model'
 import { STATUS } from '../constants/status'
+import { FOLDERS } from '../constants/config'
+import { uploadFile, uploadManyFile } from '../utils/upload'
 import { omitBy } from 'lodash'
 
 const addUser = async (req: Request, res: Response) => {
@@ -182,6 +184,16 @@ const deleteUser = async (req: Request, res: Response) => {
   }
 }
 
+const uploadUserAvatarImage = async (req: Request, res: Response) => {
+  // console.log('file: ', req.files, req.headers)
+  const path = await uploadFile(req, FOLDERS.AVATAR)
+  const response = {
+    message: 'Upload ảnh thành công',
+    data: path,
+  }
+  return responseSuccess(res, response)
+}
+
 const userController = {
   addUser,
   getUsers,
@@ -190,6 +202,7 @@ const userController = {
   updateUser,
   deleteUser,
   updateMe,
+  uploadUserAvatarImage
 }
 
 export default userController
