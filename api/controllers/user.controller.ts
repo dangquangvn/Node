@@ -3,7 +3,8 @@ import { Request, Response } from 'express'
 import { responseSuccess, ErrorHandler } from '../utils/response'
 import { UserModel } from '../database/models/user.model'
 import { STATUS } from '../constants/status'
-import { FOLDERS } from '../constants/config'
+import { HOST } from '../utils/helper'
+import { FOLDERS, FOLDER_UPLOAD, ROUTE_IMAGE } from '../constants/config'
 import { uploadFile, uploadManyFile } from '../utils/upload'
 import { omitBy } from 'lodash'
 
@@ -169,7 +170,7 @@ const updateMe = async (req: Request, res: Response) => {
     .lean()
   const response = {
     message: 'Cập nhật thông tin thành công',
-    data: updatedUserDB,
+    data: handleUserImage(updatedUserDB),
   }
   return responseSuccess(res, response)
 }
@@ -192,6 +193,18 @@ const uploadUserAvatarImage = async (req: Request, res: Response) => {
     data: path,
   }
   return responseSuccess(res, response)
+}
+
+export const handleUserImage = (user) => {
+  if (user.avatar !== undefined && user.avatar !== '') {
+    user.avatar = HOST + `/${ROUTE_IMAGE}/` + user.avatar
+  }
+  // if (product.images !== undefined && product.images.length !== 0) {
+  //   product.images = product.images.map((image) => {
+  //     return image !== '' ? HOST + `/${ROUTE_IMAGE}/` + image : ''
+  //   })
+  // }
+  return user
 }
 
 const userController = {

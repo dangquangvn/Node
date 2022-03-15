@@ -25,6 +25,9 @@ console.log("🚀TCL: ~ file: index.ts ~ line 24 ~ dirNameWithEnv", dirNameWithE
 
 const handlerImage: any = Object.values(FOLDERS).reduce(
   (result: any, current: any) => {
+    // if (current === 'avatar') {
+    //   console.log('avatar:', path.join(dirNameWithEnv, `/${FOLDER_UPLOAD}/${current}`))
+    // }
     return [
       ...result,
       express.static(path.join(dirNameWithEnv, `/${FOLDER_UPLOAD}/${current}`)),
