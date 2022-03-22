@@ -9,6 +9,7 @@ const PurchaseSchema = new Schema(
     price: { type: Number, default: 0 },
     price_before_discount: { type: Number, default: 0 },
     status: { type: Number, default: STATUS_PURCHASE.WAIT_FOR_CONFIRMATION },
+    checkout: {type:Boolean}
   },
   {
     timestamps: true,

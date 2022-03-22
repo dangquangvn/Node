@@ -6,6 +6,8 @@ import { PurchaseModel } from '../database/models/purchase.model'
 import { ErrorHandler, responseSuccess } from '../utils/response'
 import { handleImageProduct } from './product.controller'
 import { cloneDeep } from 'lodash'
+import { UserModel } from '../database/models/user.model'
+
 
 export const addToCart = async (req: Request, res: Response) => {
   const { product_id, buy_count } = req.body
@@ -246,4 +248,78 @@ export const deletePurchases = async (req: Request, res: Response) => {
     message: `Xoá ${deletedData.deletedCount} đơn thành công`,
     data: { deleted_count: deletedData.deletedCount },
   })
+}
+
+const stripe = require("stripe")(process.env.REACT_APP_STRIPE_SECRET_KEY);
+
+export const createPaymentIntent = async (req: Request, res: Response) => {
+  // console.log(`handler: event -> ${event}, context -> ${context}`);
+  // console.log(req);
+  if (!req.body) {
+    return {
+      statusCode: 200,
+      body: "create payment intent but no event.body",
+    };
+  }
+  try {
+
+  
+  const { purchases} = req.body;
+  if(!purchases) {
+    return responseSuccess(res,{message:'No products to checkout'})
+  }
+  //= 1 find user
+  const userId = purchases && purchases[0]?.user
+  // const userDB = await UserModel.findOne({_id:purchases[0]?.user}).exec()
+  // console.log("🚀TCL: ~ file: purchase.controller.ts ~ line 267 ~ createPaymentIntent ~ userDB", userDB)
+  //= 2 get user cart total
+  //= get array of purchase ids from FE
+  const purchaseIds = purchases.map(purchase => purchase._id)
+  //= find all purchase in db by purchaseIds {array}
+  const purchaseInDB: any = await PurchaseModel.find({'_id':{$in:purchaseIds}})
+  // const purchaseInDB: any = await PurchaseModel.find({user:userId})
+  //= 3 calculate cart total
+  const cartTotal = purchaseInDB.reduce((total, item)=>
+  {
+    // console.log('total: ', total)
+    return total += item.price * item.buy_count
+    }
+  ,0)
+
+
+
+  // in reality:
+  // we will send each of item_id in cart to our server and get the actual price
+  // const data = axios.get('/products')
+  // in this scenerio:
+  const calculateOrderAmount = () => {
+    // return total_amount + shipping_fee;
+    return 1000
+  };
+
+  
+    // Create a PaymentIntent with the order amount and currency
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: cartTotal,
+      currency: "usd",
+      // currency: "vnd",
+    });
+
+    // return {
+    //   statusCode: 200,
+    //   body: ({ clientSecret: paymentIntent.client_secret }),
+    // };
+    const response = {
+      message: 'payment token',
+      data: { clientSecret: paymentIntent.client_secret },
+    }
+    return responseSuccess(res, response)
+  } catch (error) {
+    // console.log(error);
+    // return {
+    //   statusCode: 500,
+    //   body: ({ msg: error.message }),
+    // };
+    throw new ErrorHandler(STATUS.INTERNAL_SERVER_ERROR, error.message)
+  }
 }

@@ -44,3 +44,9 @@ userPurchaseRouter.get(
   authMiddleware.verifyAccessToken,
   wrapAsync(purchaseController.getPurchases)
 )
+
+userPurchaseRouter.post(
+  '/create-payment-intent',
+  // authMiddleware.verifyAccessToken,
+  wrapAsync(purchaseController.createPaymentIntent)
+)
