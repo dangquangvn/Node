@@ -3,10 +3,11 @@ import { STATUS_PURCHASE } from '../constants/purchase'
 import { STATUS } from '../constants/status'
 import { ProductModel } from '../database/models/product.model'
 import { PurchaseModel } from '../database/models/purchase.model'
-import { ErrorHandler, responseSuccess } from '../utils/response'
+import { ErrorHandler, responseSuccess,responseError } from '../utils/response'
 import { handleImageProduct } from './product.controller'
 import { cloneDeep } from 'lodash'
 import { UserModel } from '../database/models/user.model'
+import { STRIPE_ORDER_STATUS } from '../constants/stripeStatus'
 
 
 export const addToCart = async (req: Request, res: Response) => {
@@ -264,13 +265,17 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
   try {
 
   
-  const { purchases} = req.body;
+  const {purchases} = req.body;
   if(!purchases) {
     return responseSuccess(res,{message:'No products to checkout'})
   }
   //= 1 find user
-  const userId = purchases && purchases[0]?.user
-  // const userDB = await UserModel.findOne({_id:purchases[0]?.user}).exec()
+  // const userId = purchases && purchases[0]?.user
+  // // const userDB = await UserModel.findOne({_id:purchases[0]?.user}).exec()
+  // const userDB = await UserModel.findOneAndUpdate({_id:userId},{metadata:{
+  //   client
+  // }})
+  // console.log("🚀TCL: ~ file: purchase.controller.ts ~ line 276 ~ createPaymentIntent ~ userDB", userDB)
   // console.log("🚀TCL: ~ file: purchase.controller.ts ~ line 267 ~ createPaymentIntent ~ userDB", userDB)
   //= 2 get user cart total
   //= get array of purchase ids from FE
@@ -304,6 +309,21 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
       currency: "usd",
       // currency: "vnd",
     });
+    console.log("🚀TCL: ~ file: purchase.controller.ts ~ line 307 ~ createPaymentIntent ~ paymentIntent", paymentIntent)
+
+  //= store clientSecret to userDB
+    const userId = purchases && purchases[0]?.user
+    // const userDB = await UserModel.findOne({_id:purchases[0]?.user}).exec()
+    const userDB = await UserModel.findOneAndUpdate(
+      {_id:userId},
+      {metadata:{
+        client_secret:paymentIntent.client_secret,
+        orderId: paymentIntent.id, 
+        status: paymentIntent.status,
+      }},
+      {new:true}
+    )
+    console.log("🚀TCL: ~ file: purchase.controller.ts ~ line 276 ~ createPaymentIntent ~ userDB", userDB)
 
     // return {
     //   statusCode: 200,
@@ -311,7 +331,7 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     // };
     const response = {
       message: 'payment token',
-      data: { clientSecret: paymentIntent.client_secret },
+      data: { clientSecret: paymentIntent.client_secret, orderId: paymentIntent.id },
     }
     return responseSuccess(res, response)
   } catch (error) {
@@ -323,3 +343,62 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     throw new ErrorHandler(STATUS.INTERNAL_SERVER_ERROR, error.message)
   }
 }
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const updatePaymentIntent = async(req:Request, res:Response) => {
+  if (!req.body) {
+    return {
+      statusCode: 200,
+      body: "create payment intent but no event.body",
+    };
+  }
+
+  try {
+    const {purchases, orderId} = req.body;
+    console.log('req.body: ', req.body)
+    const user_id = req.jwtDecoded.id
+    // 1. neu ko co purchase thi bao loi
+    if(!purchases || !orderId) {
+      return responseError(res,new ErrorHandler(STATUS.BAD_REQUEST,'No products to checkout or cannot find any order'))
+    }
+
+    //= 2. Calculate Cart Total
+    const purchaseIds = purchases.map(purchase => purchase._id)
+    const purchaseInDB: any = await PurchaseModel.find({'_id':{$in:purchaseIds}})
+    const cartTotal = purchaseInDB.reduce((total, item)=>
+    {
+      return total += item.price * item.buy_count
+    }
+  ,0)
+    //= 3. update paymentIntent in stripe
+    const paymentIntent = await stripe.paymentIntents.update(orderId,{
+      amount:cartTotal,
+      currency: "usd",
+    })
+    console.log("🚀TCL: updatePaymentIntent ", paymentIntent)
+    const response = {
+      message: 'update payment successful',
+      data: paymentIntent,
+    }
+    return responseSuccess(res, response)
+
+
+    // const response = {
+    //   message: 'payment token',
+    //   data: { clientSecret: paymentIntent.client_secret, orderId: paymentIntent.id },
+    // }
+
+
+  } catch(error) {
+    throw new ErrorHandler(STATUS.INTERNAL_SERVER_ERROR, error.message)
+  }
+}
+
+// export const getPaymentIntent = async(req:Request, res:Response) => {
+//   const user_id = req.jwtDecoded.id
+// }

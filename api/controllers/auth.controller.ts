@@ -8,6 +8,7 @@ import { UserModel } from '../database/models/user.model'
 import { AccessTokenModel } from '../database/models/access-token.model'
 import { omit } from 'lodash'
 import { STATUS } from '../constants/status'
+import {handleUserImage} from './user.controller'
 
 const registerController = async (req: Request, res: Response) => {
   const body: Register = req.body
@@ -81,12 +82,13 @@ const loginController = async (req: Request, res: Response) => {
       user_id: userInDB._id,
       token: access_token,
     }).save()
+    
     const response = {
       message: 'Đăng nhập thành công',
       data: {
         access_token: 'Bearer ' + access_token,
         expires: config.EXPIRE_ACCESS_TOKEN,
-        user: omit(userInDB, ['password']),
+        user: omit(handleUserImage(userInDB), ['password']),
       },
     }
     return responseSuccess(res, response)

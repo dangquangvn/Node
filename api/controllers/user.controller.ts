@@ -55,9 +55,10 @@ const addUser = async (req: Request, res: Response) => {
 }
 
 const getUsers = async (req: Request, res: Response) => {
-  const usersDB = await UserModel.find({})
+  let usersDB = await UserModel.find({})
     .select({ password: 0, __v: 0 })
     .lean()
+  usersDB = usersDB.map(user => handleUserImage(user))
   const response = {
     message: 'Lấy người dùng thành công',
     data: usersDB,
@@ -72,7 +73,7 @@ const getDetailMySelf = async (req: Request, res: Response) => {
   if (userDB) {
     const response = {
       message: 'Lấy người dùng thành công',
-      data: userDB,
+      data: handleUserImage(userDB),
     }
     return responseSuccess(res, response)
   } else {
@@ -85,9 +86,10 @@ const getUser = async (req: Request, res: Response) => {
     .select({ password: 0, __v: 0 })
     .lean()
   if (userDB) {
+    
     const response = {
       message: 'Lấy người dùng thành công',
-      data: userDB,
+      data: handleUserImage(userDB),
     }
     return responseSuccess(res, response)
   } else {

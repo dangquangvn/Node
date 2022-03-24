@@ -45,8 +45,23 @@ userPurchaseRouter.get(
   wrapAsync(purchaseController.getPurchases)
 )
 
+/**
+ * create unconfirm payment on stripe
+ * @return {string} client secret token
+ * @return {string} message
+ */
 userPurchaseRouter.post(
   '/create-payment-intent',
-  // authMiddleware.verifyAccessToken,
+  authMiddleware.verifyAccessToken,
   wrapAsync(purchaseController.createPaymentIntent)
+)
+
+// userPurchaseRouter.get('/get-payment-intent',
+// authMiddleware.verifyAccessToken,
+// wrapAsync(purchaseController.getPaymentIntent)
+// )
+
+userPurchaseRouter.post('/update-payment-intent',
+authMiddleware.verifyAccessToken,
+wrapAsync(purchaseController.updatePaymentIntent)
 )
