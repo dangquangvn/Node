@@ -255,7 +255,7 @@ const stripe = require("stripe")(process.env.REACT_APP_STRIPE_SECRET_KEY);
 
 export const createPaymentIntent = async (req: Request, res: Response) => {
   // console.log(`handler: event -> ${event}, context -> ${context}`);
-  // console.log(req);
+  console.log('POST createPaymentIntent');
   if (!req.body) {
     return {
       statusCode: 200,
@@ -265,9 +265,10 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
   try {
 
   
-  const {purchases} = req.body;
+  const {selectedPurchases:purchases} = req.body;
+  console.log("🚀TCL: ~ file: purchase.controller.ts ~ line 269 ~ createPaymentIntent ~ purchases", purchases)
   if(!purchases) {
-    return responseSuccess(res,{message:'No products to checkout'})
+    return responseError(res,new ErrorHandler(STATUS.BAD_REQUEST,'No products to checkout or cannot find any order'))
   }
   //= 1 find user
   // const userId = purchases && purchases[0]?.user
@@ -359,7 +360,8 @@ export const updatePaymentIntent = async(req:Request, res:Response) => {
   }
 
   try {
-    const {purchases, orderId} = req.body;
+    // const {purchases, orderId} = req.body;
+    const {selectedPurchases:purchases, orderId} = req.body;
     console.log('req.body: ', req.body)
     const user_id = req.jwtDecoded.id
     // 1. neu ko co purchase thi bao loi
